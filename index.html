@@ -6,7 +6,7 @@
     <title>Puntos AFK - Gana tu Robux</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDKs (versión actualizada - compat para mantener tu estilo de código) -->
+    <!-- Firebase SDKs (versión compat para mantener el estilo de código) -->
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -70,14 +70,14 @@
 
     <script>
         // ────────────────────────────────────────────────
-        // PEGA AQUÍ TU CONFIG REAL DE FIREBASE (la copiaste de Project Overview > Web App)
+        // Tu firebaseConfig REAL (de tu proyecto "nuestros-dias-ga")
         const firebaseConfig = {
-            apiKey: "AIzaSy...TU_CLAVE_AQUI...",
-            authDomain: "tu-proyecto.firebaseapp.com",
-            projectId: "tu-proyecto",
-            storageBucket: "tu-proyecto.appspot.com",
-            messagingSenderId: "TU_SENDER_ID",
-            appId: "1:TU_APP_ID:web:TU_WEB_ID"
+          apiKey: "AIzaSyCPX9Nc2tQ1Ev0F9W-X8sxnj8Lab7PsRS8",
+          authDomain: "nuestros-dias-ga.firebaseapp.com",
+          projectId: "nuestros-dias-ga",
+          storageBucket: "nuestros-dias-ga.firebasestorage.app",
+          messagingSenderId: "131537432931",
+          appId: "1:131537432931:web:bde07608bacb8f72376356"
         };
 
         // Inicializa Firebase
@@ -89,7 +89,7 @@
         let points = 0;
         let interval;
         const threshold = 30;
-        // ¡Cambia esto por tus códigos reales de Robux!
+        // ¡Cambia esto por tus códigos reales de Robux cuando los tengas!
         const robuxCodes = ['CODIGO123-ABC', 'ROBUX-456XYZ', 'FREE-789ROBUX']; 
 
         const loginBtn = document.getElementById('loginBtn');
