@@ -79,9 +79,9 @@
 
         let user = null;
         let points = 0;
-        let interval;
+        let interval = null;
         let hasCodes = false;
-        const threshold = 100; // Cambia aquí si quieres
+        const threshold = 100;
 
         const loginBtn = document.getElementById('loginBtn');
         const logoutBtn = document.getElementById('logoutBtn');
@@ -99,7 +99,7 @@
                 user = result.user;
                 updateUIAfterLogin();
                 checkCodesAndLoadProgress();
-            }).catch(err => console.error("Error login:", err));
+            }).catch(err => console.error("Error en login:", err));
         });
 
         logoutBtn.addEventListener('click', () => {
@@ -107,7 +107,7 @@
                 user = null;
                 resetUI();
                 stopTimer();
-            });
+            }).catch(err => console.error("Error logout:", err));
         });
 
         function updateUIAfterLogin() {
@@ -142,16 +142,17 @@
                 } else {
                     statusEl.textContent = '¡Estás sumando puntos! 🔥';
                     statusEl.classList.remove('text-red-400');
-                    if (points < threshold) startTimer();
                 }
             } catch (err) {
                 console.error("Error verificando códigos:", err);
+                statusEl.textContent = 'Error al verificar códigos. Intenta recargar.';
             }
         }
 
         function checkCodesAndLoadProgress() {
-            checkCodesAvailability();
-            loadProgress();
+            checkCodesAvailability().then(() => {
+                loadProgress();
+            });
         }
 
         function loadProgress() {
@@ -161,23 +162,32 @@
                     points = doc.data().points || 0;
                 } else {
                     db.collection('users').doc(user.uid).set({ points: 0 });
+                    points = 0;
                 }
                 updatePoints();
-                if (points >= threshold && hasCodes) {
-                    redeemBtn.classList.remove('hidden');
-                    stopTimer();
+                // Decidir acción después de cargar puntos
+                if (hasCodes) {
+                    if (points >= threshold) {
+                        redeemBtn.classList.remove('hidden');
+                        stopTimer();
+                    } else {
+                        startTimer();
+                    }
                 }
             }).catch(err => console.error("Error cargando puntos:", err));
         }
 
         function saveProgress() {
             if (user) {
-                db.collection('users').doc(user.uid).update({ points }).catch(err => console.error("Error guardando:", err));
+                db.collection('users').doc(user.uid).update({ points })
+                    .catch(err => console.error("Error guardando puntos:", err));
             }
         }
 
         function startTimer() {
+            if (interval) clearInterval(interval);
             if (!hasCodes || points >= threshold) return;
+
             interval = setInterval(() => {
                 points++;
                 updatePoints();
@@ -190,12 +200,15 @@
         }
 
         function stopTimer() {
-            clearInterval(interval);
+            if (interval) {
+                clearInterval(interval);
+                interval = null;
+            }
         }
 
         function updatePoints() {
             pointsEl.textContent = points;
-            const percent = (points / threshold) * 100;
+            const percent = Math.min((points / threshold) * 100, 100);
             const offset = 283 - (283 * percent / 100);
             progressCircle.style.strokeDashoffset = offset;
 
@@ -212,7 +225,7 @@
 
                 if (snapshot.empty) {
                     codeEl.textContent = '¡Ups! No quedan códigos 😅';
-                    checkCodesAvailability();
+                    await checkCodesAvailability();
                     return;
                 }
 
@@ -230,9 +243,9 @@
                 saveProgress();
                 updatePoints();
                 redeemBtn.classList.add('hidden');
-                checkCodesAvailability();
+                await checkCodesAvailability();
             }).catch(err => {
-                console.error("Error en transacción:", err);
+                console.error("Error en canje:", err);
                 codeEl.textContent = 'Error al canjear. Intenta de nuevo.';
             });
         }
