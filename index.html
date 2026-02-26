@@ -97,6 +97,7 @@
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider).then(result => {
                 user = result.user;
+                console.log("Login exitoso, usuario:", user.displayName);
                 updateUIAfterLogin();
                 checkCodesAndLoadProgress();
             }).catch(err => console.error("Error en login:", err));
@@ -105,6 +106,7 @@
         logoutBtn.addEventListener('click', () => {
             auth.signOut().then(() => {
                 user = null;
+                console.log("Sesión cerrada");
                 resetUI();
                 stopTimer();
             }).catch(err => console.error("Error logout:", err));
@@ -131,25 +133,30 @@
         }
 
         async function checkCodesAvailability() {
+            console.log("Verificando códigos en Firestore...");
             try {
                 const snapshot = await db.collection('codes').where('used', '==', false).limit(1).get();
                 hasCodes = !snapshot.empty;
+                console.log("¿Hay códigos disponibles?", hasCodes, " - Cantidad encontrados:", snapshot.size);
                 if (!hasCodes) {
+                    console.log("No hay códigos → status rojo");
                     statusEl.textContent = '¡Ups! No hay más códigos disponibles 😅';
                     statusEl.classList.add('text-red-400');
                     stopTimer();
                     redeemBtn.classList.add('hidden');
                 } else {
+                    console.log("Sí hay códigos → status normal");
                     statusEl.textContent = '¡Estás sumando puntos! 🔥';
                     statusEl.classList.remove('text-red-400');
                 }
             } catch (err) {
-                console.error("Error verificando códigos:", err);
-                statusEl.textContent = 'Error al verificar códigos. Intenta recargar.';
+                console.error("ERROR al verificar códigos:", err.code || err.message);
+                statusEl.textContent = 'Error al verificar códigos. Revisa consola.';
             }
         }
 
         function checkCodesAndLoadProgress() {
+            console.log("Iniciando chequeo de códigos y carga de progreso...");
             checkCodesAvailability().then(() => {
                 loadProgress();
             });
@@ -157,22 +164,29 @@
 
         function loadProgress() {
             if (!user) return;
+            console.log("Cargando puntos del usuario:", user.uid);
             db.collection('users').doc(user.uid).get().then(doc => {
                 if (doc.exists) {
                     points = doc.data().points || 0;
+                    console.log("Puntos cargados desde Firestore:", points);
                 } else {
+                    console.log("Usuario nuevo → creando documento con 0 puntos");
                     db.collection('users').doc(user.uid).set({ points: 0 });
                     points = 0;
                 }
                 updatePoints();
-                // Decidir acción después de cargar puntos
+                console.log("Estado después de cargar: hasCodes =", hasCodes, "| points =", points, "| threshold =", threshold);
                 if (hasCodes) {
                     if (points >= threshold) {
+                        console.log("Ya alcanzó o superó 100 → muestra botón, NO inicia timer");
                         redeemBtn.classList.remove('hidden');
                         stopTimer();
                     } else {
+                        console.log("Puntos < 100 y hay códigos → INICIANDO TIMER");
                         startTimer();
                     }
+                } else {
+                    console.log("No hay códigos → NO inicia timer");
                 }
             }).catch(err => console.error("Error cargando puntos:", err));
         }
@@ -180,19 +194,28 @@
         function saveProgress() {
             if (user) {
                 db.collection('users').doc(user.uid).update({ points })
-                    .catch(err => console.error("Error guardando puntos:", err));
+                    .catch(err => console.error("Error guardando:", err));
             }
         }
 
         function startTimer() {
-            if (interval) clearInterval(interval);
-            if (!hasCodes || points >= threshold) return;
-
+            console.log("Llamado startTimer()");
+            if (interval) {
+                console.log("Limpiando interval anterior");
+                clearInterval(interval);
+            }
+            if (!hasCodes || points >= threshold) {
+                console.log("Condición bloquea inicio: hasCodes=", hasCodes, "points=", points);
+                return;
+            }
+            console.log("Iniciando contador cada segundo...");
             interval = setInterval(() => {
                 points++;
+                console.log("Punto agregado:", points);
                 updatePoints();
                 saveProgress();
                 if (points >= threshold) {
+                    console.log("Alcanzado 100 → mostrando botón canjear");
                     redeemBtn.classList.remove('hidden');
                     stopTimer();
                 }
@@ -203,6 +226,7 @@
             if (interval) {
                 clearInterval(interval);
                 interval = null;
+                console.log("Timer detenido");
             }
         }
 
@@ -255,9 +279,11 @@
         auth.onAuthStateChanged(currentUser => {
             if (currentUser) {
                 user = currentUser;
+                console.log("Usuario autenticado:", user.uid);
                 updateUIAfterLogin();
                 checkCodesAndLoadProgress();
             } else {
+                console.log("No hay usuario autenticado");
                 resetUI();
             }
         });
@@ -271,4 +297,4 @@
         });
     </script>
 </body>
-</html>
+    </html>
