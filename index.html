@@ -4,35 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Puntos AFK - Gana tu Robux</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDKs (versión compat para mantener el estilo de código) -->
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <style>
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 text-gray-100 flex items-center justify-center p-6 font-sans antialiased">
 
     <div class="w-full max-w-md bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 rounded-3xl shadow-2xl shadow-purple-500/20 p-8 transition-all duration-500">
         
-        <!-- Header -->
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                 Puntos AFK
             </h1>
-            <p class="mt-2 text-gray-400">Quédate aquí y gana puntos cada segundo. ¡Llega a 30 y llévate un código Robux!</p>
+            <p class="mt-2 text-gray-400">Quédate aquí y gana puntos cada segundo. ¡Llega a 100 y llévate un código Robux!</p>
         </div>
 
-        <!-- Estado del usuario -->
         <div id="userInfo" class="text-center mb-6 text-lg font-medium text-purple-300"></div>
 
-        <!-- Botones de auth -->
         <div class="space-y-4">
             <button id="loginBtn" class="w-full flex items-center justify-center gap-3 bg-white text-gray-900 py-3 px-6 rounded-xl font-semibold shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] transition-all duration-300">
                 <svg class="w-6 h-6" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.51h5.84c-.25 1.31-.98 2.42-2.07 3.16v2.63h3.35c1.96-1.81 3.09-4.47 3.09-7.8z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-1.01 7.28-2.73l-3.35-2.63c-1.01.68-2.29 1.08-3.93 1.08-3.02 0-5.58-2.04-6.49-4.79H.96v2.67C2.77 20.39 6.62 23 12 23z"/><path fill="#FBBC05" d="M5.51 14.21c-.23-.68-.36-1.41-.36-2.21s.13-1.53.36-2.21V7.34H.96C.35 8.85 0 10.39 0 12s.35 3.15.96 4.66l4.55-2.45z"/><path fill="#EA4335" d="M12 4.98c1.64 0 3.11.56 4.27 1.66l3.19-3.19C17.46 1.01 14.97 0 12 0 6.62 0 2.77 2.61.96 6.34l4.55 2.45C6.42 6.02 8.98 4.98 12 4.98z"/></svg>
@@ -44,7 +36,6 @@
             </button>
         </div>
 
-        <!-- Sección de progreso (solo visible logueado) -->
         <div id="progressSection" class="mt-10 hidden">
             <div class="relative mx-auto w-40 h-40">
                 <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -59,18 +50,20 @@
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
                     <span id="points" class="text-5xl font-bold text-white">0</span>
-                    <span class="text-sm text-gray-400">/ 30</span>
+                    <span class="text-sm text-gray-400">/ 100</span>
                 </div>
             </div>
 
             <p id="status" class="text-center mt-6 text-lg text-purple-300">¡Estás sumando puntos! 🔥</p>
             <p id="code" class="text-center mt-4 text-xl font-bold text-yellow-400 break-all"></p>
+
+            <button id="redeemBtn" class="w-full bg-green-600/80 hover:bg-green-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-300 mt-4 hidden">
+                Canjear puntos por Robux
+            </button>
         </div>
     </div>
 
     <script>
-        // ────────────────────────────────────────────────
-        // Tu firebaseConfig REAL (de tu proyecto "nuestros-dias-ga")
         const firebaseConfig = {
           apiKey: "AIzaSyCPX9Nc2tQ1Ev0F9W-X8sxnj8Lab7PsRS8",
           authDomain: "nuestros-dias-ga.firebaseapp.com",
@@ -80,7 +73,6 @@
           appId: "1:131537432931:web:bde07608bacb8f72376356"
         };
 
-        // Inicializa Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
@@ -88,9 +80,8 @@
         let user = null;
         let points = 0;
         let interval;
-        const threshold = 30;
-        // ¡Cambia esto por tus códigos reales de Robux cuando los tengas!
-        const robuxCodes = ['CODIGO123-ABC', 'ROBUX-456XYZ', 'FREE-789ROBUX']; 
+        let hasCodes = false;
+        const threshold = 100; // Cambia aquí si quieres
 
         const loginBtn = document.getElementById('loginBtn');
         const logoutBtn = document.getElementById('logoutBtn');
@@ -100,25 +91,23 @@
         const statusEl = document.getElementById('status');
         const codeEl = document.getElementById('code');
         const progressCircle = document.getElementById('progressCircle');
+        const redeemBtn = document.getElementById('redeemBtn');
 
-        // Login con Google
         loginBtn.addEventListener('click', () => {
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider).then(result => {
                 user = result.user;
                 updateUIAfterLogin();
-                loadProgress();
-                startTimer();
-            }).catch(err => console.error("Error en login:", err));
+                checkCodesAndLoadProgress();
+            }).catch(err => console.error("Error login:", err));
         });
 
-        // Logout
         logoutBtn.addEventListener('click', () => {
             auth.signOut().then(() => {
                 user = null;
                 resetUI();
                 stopTimer();
-            }).catch(err => console.error("Error en logout:", err));
+            });
         });
 
         function updateUIAfterLogin() {
@@ -134,9 +123,35 @@
             logoutBtn.classList.add('hidden');
             progressSection.classList.add('hidden');
             points = 0;
+            hasCodes = false;
             updatePoints();
             codeEl.textContent = '';
             statusEl.textContent = '';
+            redeemBtn.classList.add('hidden');
+        }
+
+        async function checkCodesAvailability() {
+            try {
+                const snapshot = await db.collection('codes').where('used', '==', false).limit(1).get();
+                hasCodes = !snapshot.empty;
+                if (!hasCodes) {
+                    statusEl.textContent = '¡Ups! No hay más códigos disponibles 😅';
+                    statusEl.classList.add('text-red-400');
+                    stopTimer();
+                    redeemBtn.classList.add('hidden');
+                } else {
+                    statusEl.textContent = '¡Estás sumando puntos! 🔥';
+                    statusEl.classList.remove('text-red-400');
+                    if (points < threshold) startTimer();
+                }
+            } catch (err) {
+                console.error("Error verificando códigos:", err);
+            }
+        }
+
+        function checkCodesAndLoadProgress() {
+            checkCodesAvailability();
+            loadProgress();
         }
 
         function loadProgress() {
@@ -148,23 +163,27 @@
                     db.collection('users').doc(user.uid).set({ points: 0 });
                 }
                 updatePoints();
-            }).catch(err => console.error("Error cargando progreso:", err));
+                if (points >= threshold && hasCodes) {
+                    redeemBtn.classList.remove('hidden');
+                    stopTimer();
+                }
+            }).catch(err => console.error("Error cargando puntos:", err));
         }
 
         function saveProgress() {
             if (user) {
-                db.collection('users').doc(user.uid).update({ points })
-                    .catch(err => console.error("Error guardando:", err));
+                db.collection('users').doc(user.uid).update({ points }).catch(err => console.error("Error guardando:", err));
             }
         }
 
         function startTimer() {
+            if (!hasCodes || points >= threshold) return;
             interval = setInterval(() => {
                 points++;
                 updatePoints();
                 saveProgress();
                 if (points >= threshold) {
-                    giveCode();
+                    redeemBtn.classList.remove('hidden');
                     stopTimer();
                 }
             }, 1000);
@@ -180,41 +199,60 @@
             const offset = 283 - (283 * percent / 100);
             progressCircle.style.strokeDashoffset = offset;
 
-            if (points >= threshold) {
-                statusEl.textContent = '¡Completado! 🎉';
+            if (points >= threshold && hasCodes) {
+                statusEl.textContent = '¡Listo para canjear! 🎉';
                 statusEl.classList.add('animate-pulse');
             }
         }
 
         function giveCode() {
-            if (robuxCodes.length > 0) {
-                const code = robuxCodes.shift();
-                codeEl.textContent = `Tu código Robux: ${code}`;
+            db.runTransaction(async (transaction) => {
+                const query = db.collection('codes').where('used', '==', false).limit(1);
+                const snapshot = await transaction.get(query);
+
+                if (snapshot.empty) {
+                    codeEl.textContent = '¡Ups! No quedan códigos 😅';
+                    checkCodesAvailability();
+                    return;
+                }
+
+                const docRef = snapshot.docs[0].ref;
+                const codeData = snapshot.docs[0].data();
+
+                transaction.update(docRef, {
+                    used: true,
+                    usedBy: user.uid,
+                    usedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                codeEl.textContent = `¡Felicidades! Tu código Robux: ${codeData.code}`;
                 points = 0;
                 saveProgress();
                 updatePoints();
-            } else {
-                codeEl.textContent = '¡Ups! No quedan códigos por ahora 😅';
-            }
+                redeemBtn.classList.add('hidden');
+                checkCodesAvailability();
+            }).catch(err => {
+                console.error("Error en transacción:", err);
+                codeEl.textContent = 'Error al canjear. Intenta de nuevo.';
+            });
         }
 
-        // Persistencia al recargar página
+        redeemBtn.addEventListener('click', giveCode);
+
         auth.onAuthStateChanged(currentUser => {
             if (currentUser) {
                 user = currentUser;
                 updateUIAfterLogin();
-                loadProgress();
-                startTimer();
+                checkCodesAndLoadProgress();
             } else {
                 resetUI();
             }
         });
 
-        // Pausar contador si cambias de pestaña o minimizas
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 stopTimer();
-            } else if (user) {
+            } else if (user && hasCodes && points < threshold) {
                 startTimer();
             }
         });
